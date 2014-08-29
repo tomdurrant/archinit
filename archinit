@@ -29,8 +29,9 @@ crypt_part_label    cryptpart
 crypt_mapped_label  cryptdev
 crypt_fs_label      archlinux
 modules     "i915"
-hooks       "base systemd sd-encrypt sd-vconsole modconf block filesystem btrfs fsck shutdown"
+hooks       "base systemd sd-encrypt sd-vconsole modconf block filesystems fsck shutdown"
 )
+#hooks       "base systemd sd-encrypt sd-vconsole modconf block filesystem btrfs fsck shutdown"
 #boot_part   2
 #dmz_part    5
 # (above) base hook still here for emergency shell... need to check on when that gets changed
@@ -289,11 +290,12 @@ visudo -cf /var/tmp/sudoers.wheel \
 ------------------------------------------------------------------------
 Initial Ramdisk
 ------------------------------------------------------------------------
+installpkg btrfs-progs
 # TODO: rm old initrd files
 mv /etc/mkinitcpio.conf /etc/mkinitcpio.conf.orig
 print "MODULES=\"${=CONFIG[modules]}\"" > /etc/mkinitcpio.conf
 print "HOOKS=\"${=CONFIG[hooks]}\"" > /etc/mkinitcpio.conf
-mkinitcpio -p linux
+mkinitcpio -p linux || :
 
 :<< \
 ------------------------------------------------------------------------
