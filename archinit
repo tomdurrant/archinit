@@ -133,6 +133,8 @@ setfont $CONFIG[font]
 ------------------------------------------------------------------------
 Storage configuration
 ------------------------------------------------------------------------
+umount -R /mnt &>/dev/null || :
+cryptsetup close $CONFIG[crypt_label] &>/dev/null || :
 
 # Partitioning (drive contents preserved)
 # ----------------------------------------------------------------------
@@ -170,7 +172,7 @@ mkfs.btrfs --label $CONFIG[root_label] /dev/mapper/$CONFIG[crypt_label] # make f
 
 # Subvolume creation
 # ----------------------------------------------------------------------
-[[ -d /tmp/btrfs ]] || mkdir -p /tmp/btrfs
+[[ -d /tmp/btrfs ]] && rm -rf /tmp/btrfs; mkdir -p /tmp/btrfs
 mount -t btrfs /dev/mapper/$CONFIG[crypt_label] /tmp/btrfs
 btrfs subvolume create /tmp/btrfs/root
 btrfs subvolume create /tmp/btrfs/home
