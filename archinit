@@ -188,7 +188,8 @@ mkfs.btrfs --label $CONFIG[crypt_fs_label] /dev/mapper/$CONFIG[crypt_mapped_labe
 [[ -d /tmp/btrfs ]] && rm -rf /tmp/btrfs; mkdir -p /tmp/btrfs
 mount -t btrfs /dev/mapper/$CONFIG[crypt_mapped_label] /tmp/btrfs
 btrfs subvolume create /tmp/btrfs/root
-btrfs subvolume set-default /tmp/btrfs/root
+id=${$(btrfs subvolume list /tmp/btrfs/root)[(w)2]}
+btrfs subvolume set-default $id /tmp/btrfs/root
 btrfs subvolume create /tmp/btrfs/home
 umount /tmp/btrfs
 
