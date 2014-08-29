@@ -145,7 +145,7 @@ umount -R /mnt/boot &>/dev/null || :
 umount -R /mnt &>/dev/null || :
 cryptsetup close $CONFIG[crypt_mapped_label] &>/dev/null || :
 swapoff -L $CONFIG[swap_label] &>/dev/null || : ; }
-TRAPEXIT () { cleanup; }
+trap 'cleanup' EXIT
 cleanup
 
 # Partitioning (drive contents preserved)
