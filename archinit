@@ -257,12 +257,7 @@ cd
 installpkg () {
     for package in ${=*}
     do
-        if pacman -Qs $package &>/dev/null
-        then
-            pacman --noconfirm -S $package
-        else
-            su $CONFIG[username] -c "sudo aura --noconfirm -A $package"
-        fi
+        pacman --noconfirm -S $package || su $CONFIG[username] -c "sudo aura --noconfirm -A $package"
     done
 }
 
@@ -274,7 +269,7 @@ print ${CONFIG[locale]} > /etc/locale.gen && locale-gen
 print ${CONFIG[locale][(w)1]} >> /etc/locale.conf
 export LANG=${CONFIG[locale][(w)1]}
 print "KEYMAP=${CONFIG[keymap]}\nFONT=${CONFIG[font]}" > /etc/vconsole.conf
-ln -s "/usr/share/zoneinfo/${CONFIG[timezone]}" /etc/localtime && hwclock --systohc --utc
+ln -sf "/usr/share/zoneinfo/${CONFIG[timezone]}" /etc/localtime && hwclock --systohc --utc
 print ${CONFIG[hostname]} > /etc/hostname
 insert_at=${"${(@A)hosts::="${(@f):-$(</etc/hosts)}"}"[(I)127*]}
 hosts[$insert_at]="${hosts[insert_at]} ${CONFIG[hostname]}"
