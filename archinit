@@ -145,8 +145,8 @@ umount -R /mnt/boot &>/dev/null || :
 umount -R /mnt &>/dev/null || :
 cryptsetup close $CONFIG[crypt_mapped_label] &>/dev/null || :
 swapoff -L $CONFIG[swap_label] &>/dev/null || : ; }
-trap 'cleanup' EXIT
 cleanup
+[[ -n $1 ]] && exit # quick cleanup from cli... archinit cleanup
 
 # Partitioning (drive contents preserved)
 # ----------------------------------------------------------------------
