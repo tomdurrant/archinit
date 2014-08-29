@@ -137,12 +137,12 @@ Storage configuration
 # Partitioning (drive contents preserved)
 # ----------------------------------------------------------------------
 ram="$(( $(print ${$(cat /proc/meminfo | grep -i memtotal)[2]}) / 1000000 ))G"
-sgdisk --delete=$CONFIG[swap_part]
-sgdisk --delete=$CONFIG[crypt_part]
+sgdisk --delete=$CONFIG[swap_part] $CONFIG[drive]
+sgdisk --delete=$CONFIG[crypt_part] $CONFIG[drive]
 sgdisk --new=$CONFIG[swap_part]:0:+$ram $CONFIG[drive]
 sgdisk --largest-new=$CONFIG[crypt_part] $CONFIG[drive]
-sgdisk --change-name=$CONFIG[swap_part]:$CONFIG[swap_label]
-sgdisk --change-name=$CONFIG[crypt_part]:$CONFIG[crypt_label]
+sgdisk --change-name=$CONFIG[swap_part]:$CONFIG[swap_label] $CONFIG[drive]
+sgdisk --change-name=$CONFIG[crypt_part]:$CONFIG[crypt_label] $CONFIG[drive]
 
 # Encryption
 # ----------------------------------------------------------------------
