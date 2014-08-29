@@ -287,16 +287,6 @@ visudo -cf /var/tmp/sudoers.wheel \
 
 :<< \
 ------------------------------------------------------------------------
-Installers
-------------------------------------------------------------------------
-for installer in ${(kn)INSTALL}
-do
-    [[ -n ${install::=${INSTALL[$installer]:-}} ]] && installpkg $install
-    [[ -n ${init::=${INIT[${installer##[0-9]##,}]:-}} ]] && eval $init
-done
-
-:<< \
-------------------------------------------------------------------------
 Initial Ramdisk
 ------------------------------------------------------------------------
 # TODO: rm old initrd files
@@ -304,21 +294,6 @@ mv /etc/mkinitcpio.conf /etc/mkinitcpio.conf.orig
 print "MODULES=\"${=CONFIG[modules]}\"" > /etc/mkinitcpio.conf
 print "HOOKS=\"${=CONFIG[hooks]}\"" > /etc/mkinitcpio.conf
 mkinitcpio -p linux
-
-:<< \
-------------------------------------------------------------------------
-Passwords
-------------------------------------------------------------------------
-# Query and confirm password changes for root and user account
-() {
-    for user
-    do
-        print "Password for account '$user'"
-        while ! ${${${pass::=$(read -Ers "?Password: ")}:#$(read -Ers "?Confirmation: ")}:+false};
-        do print "\nDidn't match--try again:\n"; done
-        print -r $user:$pass | chpasswd
-    done
-} root $CONFIG[username]
 
 :<< \
 ------------------------------------------------------------------------
@@ -337,8 +312,33 @@ newentry="\n\nmenuentry 'New Arch Linux' {
     options 'ro rd.luks.crypttab=0 rd.luks.allow-discards rd.luks.uuid=${CONFIG[crypt_uuid]} root=UUID=${CONFIG[root_uuid]} rootflags=subvol=root,rw,x-systemd.device-timeout=0,relatime,compress=lzo,ssd,space_cache,autodefrag,inode_cache i915.modeset=1 quiet vga=current'
     enabled
 }"
-
 print "$newentry" >> /mnt/boot/EFI/refind/refind.conf
+
+:<< \
+------------------------------------------------------------------------
+Installers
+------------------------------------------------------------------------
+for installer in ${(kn)INSTALL}
+do
+    [[ -n ${install::=${INSTALL[$installer]:-}} ]] && installpkg $install
+    [[ -n ${init::=${INIT[${installer##[0-9]##,}]:-}} ]] && eval $init
+done
+
+:<< \
+------------------------------------------------------------------------
+Passwords
+------------------------------------------------------------------------
+# Query and confirm password changes for root and user account
+() {
+    for user
+    do
+        print "Password for account '$user'"
+        while ! ${${${pass::=$(read -Ers "?Password: ")}:#$(read -Ers "?Confirmation: ")}:+false};
+        do print "\nDidn't match--try again:\n"; done
+        print -r $user:$pass | chpasswd
+    done
+} root $CONFIG[username]
+
 
 :<< \
 ------------------------------------------------------------------------
