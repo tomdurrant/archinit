@@ -241,8 +241,10 @@ tmpaur=/tmp/aur
         tar -xzvf ${package}.tar.gz
         cd $tmpaur/${package}
         makepkg --asroot --syncdeps --install --noconfirm
+        cd
+        rm -rf $tmpaur/${package}
     done
-} cower pacaur
+} aura-bin #cower pacaur
 cd
 installpkg () {
     for package in ${=*}
@@ -251,7 +253,7 @@ installpkg () {
         then
             pacman --noconfirm -S $package
         else
-            su $CONFIG[username] -c "pacaur --noconfirm --noedit -S $package"
+            su $CONFIG[username] -c "aura --noconfirm -S $package"
         fi
     done
 }
