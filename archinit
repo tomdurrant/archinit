@@ -1,0 +1,237 @@
+#!/usr/bin/env zsh
+# ----------------------------------------------------------
+# Storage initialization commmands
+# Surface Pro 3 Dual Boot
+# ----------------------------------------------------------
+
+typeset -A CONFIG INSTALL INIT MKINITCPIO
+typeset -a INSTALLERS
+
+CONFIG=(
+username    es
+shell       zsh
+hostname    palimpsest
+timezone    America/Los_Angeles
+locale      "en_US.UTF-8 UTF-8"
+keymap      us
+font        Lat2-Terminus16
+drive       /dev/sda
+swap_part   6
+crypt_part  7
+boot_label  SYSTEM
+dmz_label   DMZ
+swap_label  swap
+crypt_label cryptsystem
+root_label  archlinux
+modules     "i915"
+hooks       "base
+             systemd
+             sd-encrypt
+             sd-vconsole
+             modconf block
+             filesystem
+             btrfs
+             fsck
+             shutdown"
+)
+# (above) base hook still here for emergency shell... need to check on when that gets changed
+INSTALLERS=(utilities networking x xutils sound)
+INSTALL=(
+utilities   "btrfs-progs
+             vim
+             refind-efi
+             powertop
+             htop
+             openssh"
+networking  "iw
+             wpa_supplicant
+             dialog
+             networkmanager
+             networkmanager-openvpn
+             rfkill"
+x           "xorg
+             i3
+             dmenu
+             compton
+             unclutter
+             rvxt-unicode
+             terminus-font
+             network-manager-applet"
+xutils      "file-roller
+             p7zip
+             zip
+             unzip
+             unrar
+             argyllcms
+             dispcalgui"
+sound       "alsa-utils
+             pulseaudio
+             paprefs
+             pavucontrol"
+)
+
+INIT=(
+sound       "amixer sset Master unmute"
+)
+
+setfont $CONFIG[font]
+
+#boot_part   2
+#dmz_part    5
+
+# Partitioning
+# ----------------------------------------------------------
+# (drive contents preserved)
+
+ram="$(( $(print ${$(cat /proc/meminfo | grep -i memtotal)[2]}) / 1000000 ))G"
+sgdisk --delete=$CONFIG[swap_part]
+sgdisk --delete=$CONFIG[crypt_part]
+sgdisk --new=$CONFIG[swap_part]:0:+$ram $CONFIG[drive]
+sgdisk --largest-new=$CONFIG[crypt_part] $CONFIG[drive]
+sgdisk --change-name=$CONFIG[swap_part]:$CONFIG[swap_label]
+sgdisk --change-name=$CONFIG[crypt_part]:$CONFIG[crypt_label]
+
+# Encryption
+# ----------------------------------------------------------
+# Query and confirm passphrase
+while ! ${${${pass::=$(
+read -Ers "?Passphrase: ")}:#$(
+read -Ers "?Confirmation: ")}:+false};
+do print "\nDidn't match--try again:\n"; done
+# LUKS formatting & open
+print -r $pass | cryptsetup luksFormat $CONFIG[drive]$CONFIG[crypt_part]
+print -r $pass | cryptsetup open $CONFIG[drive]$CONFIG[crypt_part] $CONFIG[crypt_label]
+# capture UUIDs for use in kernel command line
+CONFIG[crypt_uuid]="$(lsblk -no UUID $CONFIG[drive]$CONFIG[crypt_part])"
+CONFIG[root_uuid]="$(lsblk -no UUID /dev/mapper/$CONFIG[crypt_label])"
+
+# Swap configuration
+# ----------------------------------------------------------
+# Get swap uuid (add --label on swap to use instead)
+CONFIG[swap_uuid]="$(lsblk -no UUID /dev/sda$CONFIG[swap_part])" # get swap uuid if no label
+mkswap -U $CONFIG[swap,uuid] $CONFIG[drive]$CONFIG[swap_part] # make swap device
+swapon -U $CONFIG[swap,uuid] $CONFIG[drive]$CONFIG[swap_part] # activate swap device
+
+# Filesystem creation
+# ----------------------------------------------------------
+mkfs.btrfs --label $CONFIG[root_label] /dev/mapper/$CONFIG[crypt_label] # make filesystem
+
+# Subvolume creation
+# ----------------------------------------------------------
+[[ -d /tmp/btrfs ]] || mkdir -p /tmp/btrfs
+mount -t btrfs /dev/mapper/$CONFIG[crypt_label] /tmp/btrfs
+btrfs subvolume create /tmp/btrfs/root
+btrfs subvolume create /tmp/btrfs/home
+umount /tmp/btrfs
+
+# Mount filesystems and subvolumes
+# ----------------------------------------------------------
+opts_btrfs=defaults,x-mount.mkdir,compress=lzo,space_cache,autodefrag,inode_cache
+opts_fat=defaults,x-mount.mkdir
+opts_ntfs=defaults,x-mount.mkdir
+mount -t btrfs -o subvol=root,$opts_btrfs /dev/mapper/$CONFIG[crypt_label] /mnt
+mount -o $opts_fat -L $CONFIG[boot_label] /mnt/boot
+mount -t btrfs -o subvol=home,$opts_btrfs /dev/mapper/$CONFIG[crypt_label] /mnt/home
+mount -o $opts_ntfs -L $CONFIG[dmz_label] /mnt/home/dmz
+
+:<< \
+-----------------------------------------------------------------------
+Install base system
+-----------------------------------------------------------------------
+pacstrap /mnt base base-devel zsh
+genfstab -U -p /mnt >> /mnt/etc/fstab
+
+:<< \
+-----------------------------------------------------------------------
+Dump remainder into post chroot script
+-----------------------------------------------------------------------
+# extract everything after this section with necessary variables prefixed
+head -n1 $0 > /mnt/installer
+typeset -p CONFIG INIT INSTALL MKINITCPIO INSTALLERS >> /mnt/installer
+sed -n "/>\{10\}/,$ p" "$0" >> /mnt/installer
+chmod +x /mnt/installer
+arch-chroot /mnt /installer; rm /mnt/installer;
+umount -R /mnt/boot; umount -R /mnt; cryptsetup close crypt
+print "Installation complete. Check boot manager and reboot."
+exit
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>> CHROOT TRIM LINE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+:<< \
+-----------------------------------------------------------------------
+Install Commands
+-----------------------------------------------------------------------
+tmpaur=/tmp/aur
+[[ -d $tmpaur ]] && rm -rf $tmpaur
+mkdir $tmpaur
+() {
+    for package
+        do
+        cd $tmpaur
+        curl -O https://aur.archlinux.org/${package:0:2}/${package}/${package}.tar.gz
+        tar -xzvf ${package}.tar.gz
+        cd $tmpaur/${package}
+        makepkg --asroot --syncdeps --install
+    done
+} cower pacaur
+cd
+installpkg () {
+    pacaur --noconfirm -S ${=*}
+}
+
+:<< \
+-----------------------------------------------------------------------
+Locale, Console Font, Timezone, Hostname
+-----------------------------------------------------------------------
+print ${CONFIG[locale]} > /etc/locale.gen && locale-gen
+print ${CONFIG[locale][(w)1]} >> /etc/locale.conf
+export LANG=${CONFIG[locale][(w)1]}
+print "KEYMAP=${CONFIG[keymap]}\nFONT=${CONFIG[font]}" > /etc/vconsole.conf
+ln -s "/usr/share/zoneinfo/${CONFIG[timezone]}" /etc/localtime && hwclock --systohc --utc
+print ${CONFIG[hostname]} > /etc/hostname
+insert_at=${"${(@A)hosts::="${(@f):-$(</etc/hosts)}"}"[(I)127*]}
+hosts[$insert_at]="${hosts[insert_at]} ${CONFIG[hostname]}"
+print -l -- "${(@)hosts}" > /etc/hosts
+
+:<< \
+-----------------------------------------------------------------------
+Installers
+-----------------------------------------------------------------------
+for installer in $INSTALLERS
+do
+    [[ -n ${INSTALL[$installer]:-} ]] && installpkg $INSTALL[$installer]
+    [[ -n ${INIT[$installer]:-} ]] && eval $INIT[$installer]
+done
+
+:<< \
+-----------------------------------------------------------------------
+Initial Ramdisk
+-----------------------------------------------------------------------
+mv /etc/mkinitcpio.conf /etc/mkinitcpio.conf.orig
+print "MODULES=\"${=CONFIG[modules]}\"" > /etc/mkinitcpio.conf
+print "HOOKS=\"${=CONFIG[hooks]}\"" > /etc/mkinitcpio.conf
+mkinitcpio -p linux
+
+:<< \
+-----------------------------------------------------------------------
+Initial User
+-----------------------------------------------------------------------
+useradd -m -G wheel -s =zsh $CONFIG[username]
+# Query and confirm password changes for root and user account
+() {
+    for user
+    do
+        print "Password for account '$user'"
+        while ! ${${${pass::=$(
+        read -Ers "?Password: ")}:#$(
+        read -Ers "?Confirmation: ")}:+false};
+        do print "\nDidn't match--try again:\n"; done
+        print -r $user:$pass | chpasswd
+    done
+} root $CONFIG[username]
+echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /var/tmp/sudoers.wheel
+visudo -cf /var/tmp/sudoers.wheel \
+    && { mv /var/tmp/sudoers.wheel /etc/sudoers.d/wheel } \
+    || { print "ERROR updating sudoers; no change made" }
+
+# vim: set filetype=sh :
