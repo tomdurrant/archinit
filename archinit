@@ -23,8 +23,9 @@ crypt_part  7
 boot_label  SYSTEM
 dmz_label   DMZ
 swap_label  swap
-crypt_label cryptarch
-root_label  archlinux
+crypt_part_label    cryptpart
+crypt_mapped_label  cryptdev
+crypt_fs_label      archlinux
 modules     "i915"
 hooks       "base systemd sd-encrypt sd-vconsole modconf block filesystem btrfs fsck shutdown"
 )
@@ -139,7 +140,7 @@ umount -R /mnt/home/dmz &>/dev/null || :
 umount -R /mnt/home &>/dev/null || :
 umount -R /mnt/boot &>/dev/null || :
 umount -R /mnt &>/dev/null || :
-cryptsetup close $CONFIG[crypt_label] &>/dev/null || :
+cryptsetup close $CONFIG[crypt_mapped_label] &>/dev/null || :
 swapoff -L $CONFIG[swap_label] &>/dev/null || :
 
 # Partitioning (drive contents preserved)
@@ -150,7 +151,7 @@ sgdisk --delete=$CONFIG[crypt_part] $CONFIG[drive]
 sgdisk --new=$CONFIG[swap_part]:0:+$ram $CONFIG[drive]
 sgdisk --largest-new=$CONFIG[crypt_part] $CONFIG[drive]
 sgdisk --change-name=$CONFIG[swap_part]:$CONFIG[swap_label] $CONFIG[drive]
-sgdisk --change-name=$CONFIG[crypt_part]:$CONFIG[crypt_label] $CONFIG[drive]
+sgdisk --change-name=$CONFIG[crypt_part]:$CONFIG[crypt_part_label] $CONFIG[drive]
 
 # Encryption
 # ----------------------------------------------------------------------
@@ -159,10 +160,10 @@ while ! ${${${pass::=$(read -Ers "?Passphrase: ")}:#$(read -Ers "?Confirmation: 
 do print "\nDidn't match--try again:\n"; done
 # LUKS formatting & open
 print -r $pass | cryptsetup luksFormat $CONFIG[drive]$CONFIG[crypt_part]
-print -r $pass | cryptsetup open $CONFIG[drive]$CONFIG[crypt_part] $CONFIG[root_label]
+print -r $pass | cryptsetup open $CONFIG[drive]$CONFIG[crypt_part] $CONFIG[crypt_mapped_label]
 # capture UUIDs for use in kernel command line
 CONFIG[crypt_uuid]="$(lsblk -no UUID $CONFIG[drive]$CONFIG[crypt_part])"
-CONFIG[root_uuid]="$(lsblk -no UUID /dev/mapper/$CONFIG[crypt_label])"
+CONFIG[root_uuid]="$(lsblk -no UUID /dev/mapper/$CONFIG[crypt_mapped_label])"
 
 # Swap configuration
 # ----------------------------------------------------------------------
@@ -174,13 +175,14 @@ swapon -L $CONFIG[swap_label] $CONFIG[drive]$CONFIG[swap_part] # activate swap d
 
 # Filesystem creation
 # ----------------------------------------------------------------------
-mkfs.btrfs --label $CONFIG[root_label] /dev/mapper/$CONFIG[crypt_label] # make filesystem
+mkfs.btrfs --label $CONFIG[crypt_fs_label] /dev/mapper/$CONFIG[crypt_mapped_label] # make filesystem
 
 # Subvolume creation
 # ----------------------------------------------------------------------
 [[ -d /tmp/btrfs ]] && rm -rf /tmp/btrfs; mkdir -p /tmp/btrfs
-mount -t btrfs /dev/mapper/$CONFIG[crypt_label] /tmp/btrfs
+mount -t btrfs /dev/mapper/$CONFIG[crypt_fs_label] /tmp/btrfs
 btrfs subvolume create /tmp/btrfs/root
+btrfs subvolume set-default /tmp/btrfs/root
 btrfs subvolume create /tmp/btrfs/home
 umount /tmp/btrfs
 
@@ -189,9 +191,9 @@ umount /tmp/btrfs
 opts_btrfs=defaults,x-mount.mkdir,compress=lzo,space_cache,autodefrag,inode_cache
 opts_fat=defaults,x-mount.mkdir
 opts_ntfs=defaults,x-mount.mkdir
-mount -t btrfs -o subvol=root,$opts_btrfs /dev/mapper/$CONFIG[crypt_label] /mnt
+mount -t btrfs -o subvol=root,$opts_btrfs /dev/mapper/$CONFIG[crypt_mapped_label] /mnt
 mount -o $opts_fat -L $CONFIG[boot_label] /mnt/boot
-mount -t btrfs -o subvol=home,$opts_btrfs /dev/mapper/$CONFIG[crypt_label] /mnt/home
+mount -t btrfs -o subvol=home,$opts_btrfs /dev/mapper/$CONFIG[crypt_mapped_label] /mnt/home
 mount -o $opts_ntfs -L $CONFIG[dmz_label] /mnt/home/dmz
 
 :<< \
@@ -211,7 +213,7 @@ typeset -p CONFIG INIT INSTALL MKINITCPIO >> /mnt/installer
 sed -n "/>\{10\}/,$ p" "$0" >> /mnt/installer
 chmod +x /mnt/installer
 arch-chroot /mnt /installer; rm /mnt/installer;
-#umount -R /mnt/boot; umount -R /mnt; cryptsetup close $CONFIG[crypt_label]
+#umount -R /mnt/boot; umount -R /mnt; cryptsetup close $CONFIG[crypt_mapped_label]
 print "Installation complete. Check boot manager and reboot."
 exit
 
