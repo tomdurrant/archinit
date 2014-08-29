@@ -21,7 +21,7 @@ crypt_part  7
 boot_label  SYSTEM
 dmz_label   DMZ
 swap_label  swap
-crypt_label cryptsystem
+crypt_label cryptarch
 root_label  archlinux
 modules     "i915"
 hooks       "base systemd sd-encrypt sd-vconsole modconf block filesystem btrfs fsck shutdown"
@@ -155,7 +155,7 @@ while ! ${${${pass::=$(read -Ers "?Passphrase: ")}:#$(read -Ers "?Confirmation: 
 do print "\nDidn't match--try again:\n"; done
 # LUKS formatting & open
 print -r $pass | cryptsetup luksFormat $CONFIG[drive]$CONFIG[crypt_part]
-print -r $pass | cryptsetup open $CONFIG[drive]$CONFIG[crypt_part] $CONFIG[crypt_label]
+print -r $pass | cryptsetup open $CONFIG[drive]$CONFIG[crypt_part] $CONFIG[root_label]
 # capture UUIDs for use in kernel command line
 CONFIG[crypt_uuid]="$(lsblk -no UUID $CONFIG[drive]$CONFIG[crypt_part])"
 CONFIG[root_uuid]="$(lsblk -no UUID /dev/mapper/$CONFIG[crypt_label])"
@@ -262,6 +262,7 @@ done
 ------------------------------------------------------------------------
 Initial Ramdisk
 ------------------------------------------------------------------------
+# TODO: rm old initrd files
 mv /etc/mkinitcpio.conf /etc/mkinitcpio.conf.orig
 print "MODULES=\"${=CONFIG[modules]}\"" > /etc/mkinitcpio.conf
 print "HOOKS=\"${=CONFIG[hooks]}\"" > /etc/mkinitcpio.conf
@@ -291,10 +292,19 @@ visudo -cf /var/tmp/sudoers.wheel \
 ------------------------------------------------------------------------
 Bootloader & Kernel Command Line
 ------------------------------------------------------------------------
+# TODO:
 # if there is no existing /boot/EFI/refind directory, copy the refind
 # default directory to /boot/EFI/refind
+# if desired theme is missing, install it as well
 #
 # append a new Archlinu menuentry 
+print "\n\nmenuentry 'New Arch Linux' {
+    icon EFI/refind/next-theme/icons/os_arch.png
+    loader vmlinuz-linux
+    initrd initramfs-linux.img
+    options "ro rd.luks.crypttab=0 rd.luks.allow-discards rd.luks.uuid=${CONFIG[crypt_uuid]} root=UUID=${CONFIG[root_uuid]} rootflags=subvol=root,rw,x-systemd.device-timeout=0,relatime,compress=lzo,ssd,space_cache,autodefrag,inode_cache i915.modeset=1 quiet vga=current"
+    enabled
+}"
 
 :<< \
 ------------------------------------------------------------------------
