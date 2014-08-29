@@ -135,6 +135,7 @@ Storage configuration
 ------------------------------------------------------------------------
 umount -R /mnt &>/dev/null || :
 cryptsetup close $CONFIG[crypt_label] &>/dev/null || :
+swapoff -L $CONFIG[swap_label]
 
 # Partitioning (drive contents preserved)
 # ----------------------------------------------------------------------
