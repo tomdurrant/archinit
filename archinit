@@ -163,8 +163,9 @@ sgdisk --change-name=$CONFIG[crypt_part]:$CONFIG[crypt_part_label] $CONFIG[drive
 # Encryption
 # ----------------------------------------------------------------------
 # Query and confirm passphrase
-while ! ${${${pass::=$(read -Ers "?Passphrase: ")}:#$(read -Ers "?Confirmation: ")}:+false};
-do print "\nDidn't match--try again:\n"; done
+while ! ${${${pass::=$(read -Ers "?Passphrase: ")}:#$(\
+    read -Ers "?$(print "\nConfirmation: ")")}:+false};
+do print "\nDidn't match--try again:\n"; done; print
 # LUKS formatting & open
 print -r $pass | cryptsetup luksFormat $CONFIG[drive]$CONFIG[crypt_part]
 print -r $pass | cryptsetup open $CONFIG[drive]$CONFIG[crypt_part] $CONFIG[crypt_mapped_label]
@@ -335,8 +336,9 @@ Passwords
     for user
     do
         print "Password for account '$user'"
-        while ! ${${${pass::=$(read -Ers "?Password: ")}:#$(read -Ers "?Confirmation: ")}:+false};
-        do print "\nDidn't match--try again:\n"; done
+        while ! ${${${pass::=$(read -Ers "?Password: ")}:#$(\
+            read -Ers "?$(print "\nConfirmation: ")")}:+false};
+        do print "\nDidn't match--try again:\n"; done; print
         print -r $user:$pass | chpasswd
     done
 } root $CONFIG[username]
