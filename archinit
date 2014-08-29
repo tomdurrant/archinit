@@ -177,7 +177,7 @@ CONFIG[root_uuid]="$(lsblk -no UUID /dev/mapper/$CONFIG[crypt_mapped_label])"
 CONFIG[swap_uuid]="$(lsblk -no UUID /dev/sda$CONFIG[swap_part])" # get swap uuid if no label
 # UUID variant of mkswap and swapon: -U $CONFIG[swap,uuid]
 mkswap -L $CONFIG[swap_label] $CONFIG[drive]$CONFIG[swap_part] # make swap device
-swapon -L $CONFIG[swap_label] $CONFIG[drive]$CONFIG[swap_part] # activate swap device
+swapon -L $CONFIG[swap_label] -d $CONFIG[drive]$CONFIG[swap_part] &>/dev/null || : # activate swap device
 
 # Filesystem creation
 # ----------------------------------------------------------------------
