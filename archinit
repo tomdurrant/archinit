@@ -133,6 +133,7 @@ setfont $CONFIG[font]
 ------------------------------------------------------------------------
 Storage configuration
 ------------------------------------------------------------------------
+umount -R /mnt/boot &>/dev/null || :
 umount -R /mnt &>/dev/null || :
 cryptsetup close $CONFIG[crypt_label] &>/dev/null || :
 swapoff -L $CONFIG[swap_label]
@@ -206,7 +207,7 @@ typeset -p CONFIG INIT INSTALL MKINITCPIO >> /mnt/installer
 sed -n "/>\{10\}/,$ p" "$0" >> /mnt/installer
 chmod +x /mnt/installer
 arch-chroot /mnt /installer; rm /mnt/installer;
-umount -R /mnt/boot; umount -R /mnt; cryptsetup close crypt
+umount -R /mnt/boot; umount -R /mnt; cryptsetup close $CONFIG[crypt_label]
 print "Installation complete. Check boot manager and reboot."
 exit
 
@@ -217,13 +218,12 @@ exit
 Install Commands
 ------------------------------------------------------------------------
 tmpaur=/tmp/aur
-[[ -d $tmpaur ]] && rm -rf $tmpaur
-mkdir $tmpaur
+[[ -d $tmpaur ]] && rm -rf $tmpaur; mkdir $tmpaur
 () {
     for package
         do
         cd $tmpaur
-        curl -O https://aur.archlinux.org/${package:0:2}/${package}/${package}.tar.gz
+        curl -O https://aur.archlinux.org/packages/${package:0:2}/${package}/${package}.tar.gz
         tar -xzvf ${package}.tar.gz
         cd $tmpaur/${package}
         makepkg --asroot --syncdeps --install
