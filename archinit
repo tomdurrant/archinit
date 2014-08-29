@@ -91,7 +91,7 @@ INSTALL=(
                  i3
                  network-manager-applet
                  polkit-gnome
-                 rvxt-unicode
+                 rxvt-unicode
                  terminus-font
                  udiskie
                  unclutter
@@ -127,7 +127,7 @@ INSTALL=(
 )
 
 INIT=(
-sound           'amixer sset Master unmute'
+sound           'amixer sset Master unmute || :'
 video           'print "export LIBVA_DRIVER_NAME=vdpau\nexport VDPAU_DRIVER=va_gl" > /etc/video_accel.sh'        
 )
 
