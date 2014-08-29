@@ -200,7 +200,8 @@ mount -o $opts_ntfs -L $CONFIG[dmz_label] /mnt/home/dmz
 ------------------------------------------------------------------------
 Clean up old initramfs files
 ------------------------------------------------------------------------
-rm -f /mnt/boot/*(#q.)
+#rm -f /mnt/boot/*(#q.)
+rm -f /mnt/boot/{initramfs-linux-fallback.img,initramfs-linux.img,vmlinuz-linux}
 
 :<< \
 ------------------------------------------------------------------------
