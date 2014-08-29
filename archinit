@@ -245,7 +245,7 @@ tmpaur=/tmp/aur
 } cower pacaur
 cd
 installpkg () {
-    su es -c "pacaur --noconfirm --noedit -S ${=*}"
+    pacaur --asroot --noconfirm --noedit -S ${=*}
 }
 
 :<< \
