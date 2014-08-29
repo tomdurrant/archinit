@@ -238,7 +238,7 @@ tmpaur=/tmp/aur
         curl -O https://aur.archlinux.org/packages/${package:0:2}/${package}/${package}.tar.gz
         tar -xzvf ${package}.tar.gz
         cd $tmpaur/${package}
-        makepkg --asroot --syncdeps --install
+        makepkg --asroot --syncdeps --install --noconfirm
     done
 } cower pacaur
 cd
