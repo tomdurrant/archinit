@@ -243,7 +243,7 @@ tmpaur=/tmp/aur
 } cower pacaur
 cd
 installpkg () {
-    pacaur --noconfirm --noedit -S ${=*}
+    su es -c "pacaur --noconfirm --noedit -S ${=*}"
 }
 
 :<< \
@@ -310,13 +310,15 @@ Bootloader & Kernel Command Line
 # if desired theme is missing, install it as well
 #
 # append a new Archlinu menuentry 
-print "\n\nmenuentry 'New Arch Linux' {
+newentry="\n\nmenuentry 'New Arch Linux' {
     icon EFI/refind/next-theme/icons/os_arch.png
     loader vmlinuz-linux
     initrd initramfs-linux.img
     options "ro rd.luks.crypttab=0 rd.luks.allow-discards rd.luks.uuid=${CONFIG[crypt_uuid]} root=UUID=${CONFIG[root_uuid]} rootflags=subvol=root,rw,x-systemd.device-timeout=0,relatime,compress=lzo,ssd,space_cache,autodefrag,inode_cache i915.modeset=1 quiet vga=current"
     enabled
 }"
+
+print "$newentry" >> /mnt/boot/EFI/refind/refind.conf
 
 :<< \
 ------------------------------------------------------------------------
