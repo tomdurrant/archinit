@@ -30,16 +30,100 @@ hooks       "base systemd sd-encrypt sd-vconsole modconf block filesystem btrfs 
 #dmz_part    5
 # (above) base hook still here for emergency shell... need to check on when that gets changed
 
-INSTALLERS=(utilities networking x xutils sound)
 INSTALL=(
-utilities   "btrfs-progs vim refind-efi powertop htop openssh"
-networking  "iw wpa_supplicant dialog networkmanager networkmanager-openvpn rfkill"
-x           "xorg i3 dmenu compton unclutter rvxt-unicode terminus-font network-manager-applet"
-xutils      "file-roller p7zip zip unzip unrar argyllcms dispcalgui"
-sound       "alsa-utils pulseaudio paprefs pavucontrol"
+
+1,utilities     "
+                 btrfs-progs
+                 gnupg
+                 htop
+                 openssh
+                 powertop
+                 python
+                 refind-efi
+                 vim
+                "
+
+2,networking    "
+                 dialog
+                 iw
+                 wpa_supplicant
+                 rfkill
+                 networkmanager
+                 networkmanager-openvpn
+                "
+
+3,boot          "
+                 plymouth
+                "
+
+4,x             "
+                 xorg
+                 xf86-video-intel
+                 xf86-input-wacom
+                 libva-intel-driver
+                 libvdpau-va-gl
+                "
+
+5,dispmgr       "
+                 lightdm
+                 accountsservice
+                 light-locker
+                 lightdm-gtk3-greeter
+                "
+
+6,freedesktop   "
+                 d-feet
+                 colord colord-gtk
+                 desktop-file-utils
+                "
+
+7,wm            "
+                 compton
+                 dmenu
+                 dunst
+                 gnome-keyring
+                 gnome-keyring-query
+                 i3
+                 network-manager-applet
+                 polkit-gnome
+                 rvxt-unicode
+                 terminus-font
+                 udiskie
+                 unclutter
+                 volnoti
+                "
+
+8,xutils        "
+                 argyllcms
+                 dispcalgui
+                 feh
+                 file-roller
+                 p7zip
+                 parcellite
+                 unrar
+                 unzip
+                 xkeycaps
+                 xorg-xfontsel
+                 zip
+                "
+
+9,xapps         "
+                 ttf-bitstream-vera
+                 google-chrome-dev
+                "
+
+10,sound        "
+                 alsa-utils
+                 pulseaudio
+                 pulseaudio-alsa
+                 paprefs
+                 pavucontrol
+                "
 )
+
 INIT=(
-sound       "amixer sset Master unmute"
+sound           'amixer sset Master unmute'
+video           'print "export LIBVA_DRIVER_NAME=vdpau\nexport VDPAU_DRIVER=va_gl" > /etc/video_accel.sh'        
 )
 
 # purely cosmetic
@@ -115,7 +199,7 @@ Dump remainder into post chroot script
 ------------------------------------------------------------------------
 # extract everything after this section with necessary variables prefixed
 head -n1 $0 > /mnt/installer
-typeset -p CONFIG INIT INSTALL MKINITCPIO INSTALLERS >> /mnt/installer
+typeset -p CONFIG INIT INSTALL MKINITCPIO >> /mnt/installer
 sed -n "/>\{10\}/,$ p" "$0" >> /mnt/installer
 chmod +x /mnt/installer
 arch-chroot /mnt /installer; rm /mnt/installer;
@@ -123,7 +207,7 @@ umount -R /mnt/boot; umount -R /mnt; cryptsetup close crypt
 print "Installation complete. Check boot manager and reboot."
 exit
 
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>> CHROOT TRIM LINE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+# >>>>>>>>>>>>>>>>>>>>>>>> CHROOT TRIM LINE <<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 :<< \
 ------------------------------------------------------------------------
@@ -165,10 +249,10 @@ print -l -- "${(@)hosts}" > /etc/hosts
 ------------------------------------------------------------------------
 Installers
 ------------------------------------------------------------------------
-for installer in $INSTALLERS
+for installer in ${(kn)INSTALL}
 do
-    [[ -n ${INSTALL[$installer]:-} ]] && installpkg $INSTALL[$installer]
-    [[ -n ${INIT[$installer]:-} ]] && eval $INIT[$installer]
+    [[ -n ${install::=${INSTALL[$installer]:-}} ]] && installpkg $install
+    [[ -n ${init::=${INIT[${installer##[0-9]##,}]:-}} ]] && eval $init
 done
 
 :<< \
@@ -190,9 +274,7 @@ useradd -m -G wheel -s =zsh $CONFIG[username]
     for user
     do
         print "Password for account '$user'"
-        while ! ${${${pass::=$(
-        read -Ers "?Password: ")}:#$(
-        read -Ers "?Confirmation: ")}:+false};
+        while ! ${${${pass::=$(read -Ers "?Password: ")}:#$(read -Ers "?Confirmation: ")}:+false};
         do print "\nDidn't match--try again:\n"; done
         print -r $user:$pass | chpasswd
     done
