@@ -3,6 +3,8 @@
 # Storage initialization commmands
 # Surface Pro 3 Dual Boot
 # ----------------------------------------------------------------------
+# curl -LO http://links.ethanschoonover.com/archinit
+
 
 typeset -A CONFIG INSTALL INIT MKINITCPIO
 typeset -a INSTALLERS
@@ -133,10 +135,12 @@ setfont $CONFIG[font]
 ------------------------------------------------------------------------
 Storage configuration
 ------------------------------------------------------------------------
+umount -R /mnt/home/dmz &>/dev/null || :
+umount -R /mnt/home &>/dev/null || :
 umount -R /mnt/boot &>/dev/null || :
 umount -R /mnt &>/dev/null || :
 cryptsetup close $CONFIG[crypt_label] &>/dev/null || :
-swapoff -L $CONFIG[swap_label]
+swapoff -L $CONFIG[swap_label] &>/dev/null || :
 
 # Partitioning (drive contents preserved)
 # ----------------------------------------------------------------------
