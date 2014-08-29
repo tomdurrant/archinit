@@ -206,7 +206,9 @@ rm -f /mnt/boot/*(#q.)
 ------------------------------------------------------------------------
 Install base system
 ------------------------------------------------------------------------
-pacstrap /mnt base base-devel zsh
+pacstrap /mnt base
+pacstrap /mnt base-devel
+pacstrap /mnt zsh
 genfstab -U -p /mnt >> /mnt/etc/fstab
 
 :<< \
