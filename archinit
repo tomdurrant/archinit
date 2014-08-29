@@ -146,7 +146,7 @@ umount -R /mnt &>/dev/null || :
 cryptsetup close $CONFIG[crypt_mapped_label] &>/dev/null || :
 swapoff -L $CONFIG[swap_label] &>/dev/null || : ; }
 cleanup
-TRAPZERR () { print "\nUNHANDLED ERROR"; cleanup; exit }
+TRAPZERR () { print "\nUNHANDLED ERROR"; exit }
 [[ -n $1 ]] && exit # quick cleanup from cli... archinit cleanup
 
 # Partitioning (drive contents preserved)
@@ -282,9 +282,13 @@ print -l -- "${(@)hosts}" > /etc/hosts
 
 :<< \
 ------------------------------------------------------------------------
-Initial User
+Initial User & sudo
 ------------------------------------------------------------------------
 useradd -m -G wheel -s =zsh $CONFIG[username]
+echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /var/tmp/sudoers.wheel
+visudo -cf /var/tmp/sudoers.wheel \
+    && { mv /var/tmp/sudoers.wheel /etc/sudoers.d/wheel } \
+    || { print "ERROR updating sudoers; no change made" }
 
 :<< \
 ------------------------------------------------------------------------
@@ -320,10 +324,6 @@ Passwords
         print -r $user:$pass | chpasswd
     done
 } root $CONFIG[username]
-echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /var/tmp/sudoers.wheel
-visudo -cf /var/tmp/sudoers.wheel \
-    && { mv /var/tmp/sudoers.wheel /etc/sudoers.d/wheel } \
-    || { print "ERROR updating sudoers; no change made" }
 
 :<< \
 ------------------------------------------------------------------------
