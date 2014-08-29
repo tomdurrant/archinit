@@ -245,7 +245,15 @@ tmpaur=/tmp/aur
 } cower pacaur
 cd
 installpkg () {
-    pacaur --asroot --noconfirm --noedit -S ${=*}
+    for package in ${=*}
+    do
+        if pacman -Qs $package &>/dev/null
+        then
+            pacman --noconfirm -S $package
+        else
+            su $CONFIG[username] -c "pacaur --noconfirm --noedit -S $package"
+        fi
+    done
 }
 
 :<< \
@@ -261,6 +269,12 @@ print ${CONFIG[hostname]} > /etc/hostname
 insert_at=${"${(@A)hosts::="${(@f):-$(</etc/hosts)}"}"[(I)127*]}
 hosts[$insert_at]="${hosts[insert_at]} ${CONFIG[hostname]}"
 print -l -- "${(@)hosts}" > /etc/hosts
+
+:<< \
+------------------------------------------------------------------------
+Initial User
+------------------------------------------------------------------------
+useradd -m -G wheel -s =zsh $CONFIG[username]
 
 :<< \
 ------------------------------------------------------------------------
@@ -284,9 +298,8 @@ mkinitcpio -p linux
 
 :<< \
 ------------------------------------------------------------------------
-Initial User
+Passwords
 ------------------------------------------------------------------------
-useradd -m -G wheel -s =zsh $CONFIG[username]
 # Query and confirm password changes for root and user account
 () {
     for user
@@ -316,7 +329,7 @@ newentry="\n\nmenuentry 'New Arch Linux' {
     icon EFI/refind/next-theme/icons/os_arch.png
     loader vmlinuz-linux
     initrd initramfs-linux.img
-    options "ro rd.luks.crypttab=0 rd.luks.allow-discards rd.luks.uuid=${CONFIG[crypt_uuid]} root=UUID=${CONFIG[root_uuid]} rootflags=subvol=root,rw,x-systemd.device-timeout=0,relatime,compress=lzo,ssd,space_cache,autodefrag,inode_cache i915.modeset=1 quiet vga=current"
+    options 'ro rd.luks.crypttab=0 rd.luks.allow-discards rd.luks.uuid=${CONFIG[crypt_uuid]} root=UUID=${CONFIG[root_uuid]} rootflags=subvol=root,rw,x-systemd.device-timeout=0,relatime,compress=lzo,ssd,space_cache,autodefrag,inode_cache i915.modeset=1 quiet vga=current'
     enabled
 }"
 
