@@ -287,4 +287,20 @@ visudo -cf /var/tmp/sudoers.wheel \
     && { mv /var/tmp/sudoers.wheel /etc/sudoers.d/wheel } \
     || { print "ERROR updating sudoers; no change made" }
 
+:<< \
+------------------------------------------------------------------------
+Bootloader & Kernel Command Line
+------------------------------------------------------------------------
+# if there is no existing /boot/EFI/refind directory, copy the refind
+# default directory to /boot/EFI/refind
+#
+# append a new Archlinu menuentry 
+
+:<< \
+------------------------------------------------------------------------
+End of chroot section
+------------------------------------------------------------------------
+# will exit from chroot and perform cleanup
+
+
 # vim: set filetype=sh :
