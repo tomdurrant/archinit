@@ -180,7 +180,7 @@ mkfs.btrfs --label $CONFIG[crypt_fs_label] /dev/mapper/$CONFIG[crypt_mapped_labe
 # Subvolume creation
 # ----------------------------------------------------------------------
 [[ -d /tmp/btrfs ]] && rm -rf /tmp/btrfs; mkdir -p /tmp/btrfs
-mount -t btrfs /dev/mapper/$CONFIG[crypt_fs_label] /tmp/btrfs
+mount -t btrfs /dev/mapper/$CONFIG[crypt_mapped_label] /tmp/btrfs
 btrfs subvolume create /tmp/btrfs/root
 btrfs subvolume set-default /tmp/btrfs/root
 btrfs subvolume create /tmp/btrfs/home
