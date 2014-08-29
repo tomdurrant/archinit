@@ -253,7 +253,7 @@ installpkg () {
         then
             pacman --noconfirm -S $package
         else
-            su $CONFIG[username] -c "aura --noconfirm -S $package"
+            su $CONFIG[username] -c "aura --noconfirm -A $package"
         fi
     done
 }
