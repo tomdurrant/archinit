@@ -150,60 +150,43 @@ cleanup
 TRAPZERR () { print "\nUNHANDLED ERROR"; exit }
 [[ -n $1 ]] && exit # quick cleanup from cli... archinit cleanup
 
-# Partitioning (drive contents preserved)
+# partitioning (drive contents preserved)
 # ----------------------------------------------------------------------
 ram="$(( $(print ${$(cat /proc/meminfo | grep -i memtotal)[2]}) / 1000000 ))G"
-sgdisk --delete=$CONFIG[swap_part] $CONFIG[drive]
-sgdisk --delete=$CONFIG[crypt_part] $CONFIG[drive]
-sgdisk --new=$CONFIG[swap_part]:0:+$ram $CONFIG[drive]
-sgdisk --largest-new=$CONFIG[crypt_part] $CONFIG[drive]
-sgdisk --change-name=$CONFIG[swap_part]:$CONFIG[swap_label] $CONFIG[drive]
-sgdisk --change-name=$CONFIG[crypt_part]:$CONFIG[crypt_part_label] $CONFIG[drive]
-
-# Encryption
-# ----------------------------------------------------------------------
-# Query and confirm passphrase
 while ! ${${${pass::=$(read -Ers "?Passphrase: ")}:#$(\
     read -Ers "?$(print "\nConfirmation: ")")}:+false};
 do print "\nDidn't match--try again:\n"; done; print
-# LUKS formatting & open
-print -r $pass | cryptsetup luksFormat $CONFIG[drive]$CONFIG[crypt_part]
-print -r $pass | cryptsetup open $CONFIG[drive]$CONFIG[crypt_part] $CONFIG[crypt_mapped_label]
-# capture UUIDs for use in kernel command line
-CONFIG[crypt_uuid]="$(lsblk -no UUID $CONFIG[drive]$CONFIG[crypt_part])"
-CONFIG[root_uuid]="$(lsblk -no UUID /dev/mapper/$CONFIG[crypt_mapped_label])"
+sgdisk --largest-new=0 --change-name=0:cryptsys /dev/sda
+print -r $pass | cryptsetup luksFormat /dev/sda7
+print -r $pass | cryptsetup open /dev/sda7 lvm
+pvcreate /dev/mapper/lvm # physical volume
+vgcreate storage /dev/mapper/lvm # volume group
+lvcreate -L 8G storage  -n swapvol # logical volume
+lvcreate -l 100%FREE storage -n sysvol # logical volume
+mkfs.btrfs --label system /dev/mapper/storage-sysvol # make filesystem
+mkswap -L swap /dev/mapper/storage-swap # make swap device
+swapon -L swap -d # activate swap device
+# OR swapon -d /dev/storage/swapvol # activate swap device
+mount -t btrfs /dev/storage/sysvol /mnt # temp mount for subvol creation
+btrfs subvolume create /mnt/root
+btrfs subvolume set-default ${$(btrfs subvolume list /mnt/root)[(w)2]} /mnt/root
+btrfs subvolume create /mnt/home
+umount -R /mnt
+o_btrfs=defaults,x-mount.mkdir,compress=lzo,space_cache,autodefrag,inode_cache
+o_fat=defaults,x-mount.mkdir
+o_ntfs=defaults,x-mount.mkdir
+mount -t btrfs -o subvol=root,$o_btrfs /dev/storage/sysvol /mnt
+mount -t btrfs -o subvol=home,$o_btrfs /dev/storage/sysvol /mnt/home
+mount -o $o_fat -L SYSTEM /mnt/boot
+mount -o $o_ntfs -L DMZ /mnt/home/dmz
 
-# Swap configuration
-# ----------------------------------------------------------------------
-# Get swap uuid (add --label on swap to use instead)
+CONFIG[crypt_uuid]="$(lsblk -no UUID /dev/sda7)"
+CONFIG[lvm_uuid]="$(lsblk -no UUID /dev/mapper/lvm)"
 CONFIG[swap_uuid]="$(lsblk -no UUID /dev/sda$CONFIG[swap_part])" # get swap uuid if no label
-# UUID variant of mkswap and swapon: -U $CONFIG[swap,uuid]
-mkswap -L $CONFIG[swap_label] $CONFIG[drive]$CONFIG[swap_part] # make swap device
-swapon -L $CONFIG[swap_label] -d $CONFIG[drive]$CONFIG[swap_part] &>/dev/null || : # activate swap device
 
-# Filesystem creation
-# ----------------------------------------------------------------------
-mkfs.btrfs --label $CONFIG[crypt_fs_label] /dev/mapper/$CONFIG[crypt_mapped_label] # make filesystem
-
-# Subvolume creation
-# ----------------------------------------------------------------------
-[[ -d /tmp/btrfs ]] && rm -rf /tmp/btrfs; mkdir -p /tmp/btrfs
-mount -t btrfs /dev/mapper/$CONFIG[crypt_mapped_label] /tmp/btrfs
-btrfs subvolume create /tmp/btrfs/root
-id=${$(btrfs subvolume list /tmp/btrfs/root)[(w)2]}
-btrfs subvolume set-default $id /tmp/btrfs/root
-btrfs subvolume create /tmp/btrfs/home
-umount /tmp/btrfs
 
 # Mount filesystems and subvolumes
 # ----------------------------------------------------------------------
-opts_btrfs=defaults,x-mount.mkdir,compress=lzo,space_cache,autodefrag,inode_cache
-opts_fat=defaults,x-mount.mkdir
-opts_ntfs=defaults,x-mount.mkdir
-mount -t btrfs -o subvol=root,$opts_btrfs /dev/mapper/$CONFIG[crypt_mapped_label] /mnt
-mount -o $opts_fat -L $CONFIG[boot_label] /mnt/boot
-mount -t btrfs -o subvol=home,$opts_btrfs /dev/mapper/$CONFIG[crypt_mapped_label] /mnt/home
-mount -o $opts_ntfs -L $CONFIG[dmz_label] /mnt/home/dmz
 
 :<< \
 ------------------------------------------------------------------------
