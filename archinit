@@ -29,7 +29,7 @@ crypt_part_label    cryptpart
 crypt_mapped_label  cryptdev
 crypt_fs_label      archlinux
 modules     "i915"
-hooks       "base systemd sd-encrypt sd-vconsole modconf block filesystems fsck shutdown"
+hooks       "base systemd sd-encrypt sd-vconsole modconf block filesystems keyboard fsck shutdown"
 )
 #hooks       "base systemd sd-encrypt sd-vconsole modconf block filesystem btrfs fsck shutdown"
 #boot_part   2
@@ -315,7 +315,7 @@ newentry="\n\nmenuentry 'New Arch Linux' {
     options 'ro rd.luks.crypttab=0 rd.luks.allow-discards rd.luks.uuid=${CONFIG[crypt_uuid]} root=UUID=${CONFIG[root_uuid]} rootflags=subvol=root,rw,x-systemd.device-timeout=0,relatime,compress=lzo,ssd,space_cache,autodefrag,inode_cache i915.modeset=1 quiet vga=current'
     enabled
 }"
-print "$newentry" >> /mnt/boot/EFI/refind/refind.conf
+print "$newentry" >> /boot/EFI/refind/refind.conf
 
 :<< \
 ------------------------------------------------------------------------
