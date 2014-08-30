@@ -157,17 +157,17 @@ while ! ${${${pass::=$(read -Ers "?Passphrase: ")}:#$(\
     read -Ers "?$(print "\nConfirmation: ")")}:+false};
 do print "\nDidn't match--try again:\n"; done; print
 sgdisk --new=0:0:0 /dev/sda
-print -r $pass | cryptsetup luksFormat /dev/sda7
-print -r $pass | cryptsetup open /dev/sda7 lvm
+print -r $pass | cryptsetup luksFormat /dev/sda6
+print -r $pass | cryptsetup open /dev/sda6 lvm
 pvcreate /dev/mapper/lvm # physical volume
 vgcreate storage /dev/mapper/lvm # volume group
-lvcreate -L 8G storage  -n swapvol # logical volume
-lvcreate -l 100%FREE storage -n sysvol # logical volume
-mkfs.btrfs --label system /dev/mapper/storage-sysvol # make filesystem
+lvcreate -L 8G storage  -n swap # logical volume
+lvcreate -l 100%FREE storage -n system # logical volume
+mkfs.btrfs --label system /dev/mapper/storage-system # make filesystem
 mkswap -L swap /dev/mapper/storage-swap # make swap device
 swapon -L swap -d # activate swap device
 # OR swapon -d /dev/storage/swapvol # activate swap device
-mount -t btrfs /dev/storage/sysvol /mnt # temp mount for subvol creation
+mount -t btrfs /dev/storage/system /mnt # temp mount for subvol creation
 btrfs subvolume create /mnt/root
 btrfs subvolume set-default ${$(btrfs subvolume list /mnt/root)[(w)2]} /mnt/root
 btrfs subvolume create /mnt/home
@@ -175,12 +175,12 @@ umount -R /mnt
 o_btrfs=defaults,x-mount.mkdir,compress=lzo,space_cache,autodefrag,inode_cache
 o_fat=defaults,x-mount.mkdir
 o_ntfs=defaults,x-mount.mkdir
-mount -t btrfs -o subvol=root,$o_btrfs /dev/storage/sysvol /mnt
-mount -t btrfs -o subvol=home,$o_btrfs /dev/storage/sysvol /mnt/home
+mount -t btrfs -o subvol=root,$o_btrfs /dev/storage/system /mnt
+mount -t btrfs -o subvol=home,$o_btrfs /dev/storage/system /mnt/home
 mount -o $o_fat -L SYSTEM /mnt/boot
 mount -o $o_ntfs -L DMZ /mnt/home/dmz
 
-CONFIG[crypt_uuid]="$(lsblk -no UUID /dev/sda7)"
+CONFIG[crypt_uuid]="$(lsblk -no UUID /dev/sda6)"
 CONFIG[lvm_uuid]="$(lsblk -no UUID /dev/mapper/lvm)"
 CONFIG[swap_uuid]="$(lsblk -no UUID /dev/sda$CONFIG[swap_part])" # get swap uuid if no label
 
