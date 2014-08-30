@@ -295,7 +295,7 @@ installpkg btrfs-progs
 # TODO: rm old initrd files
 mv /etc/mkinitcpio.conf /etc/mkinitcpio.conf.orig
 print "MODULES=\"${=CONFIG[modules]}\"" > /etc/mkinitcpio.conf
-print "HOOKS=\"${=CONFIG[hooks]}\"" > /etc/mkinitcpio.conf
+print "HOOKS=\"${=CONFIG[hooks]}\"" >> /etc/mkinitcpio.conf
 mkinitcpio -p linux || :
 
 :<< \
