@@ -156,7 +156,7 @@ ram="$(( $(print ${$(cat /proc/meminfo | grep -i memtotal)[2]}) / 1000000 ))G"
 while ! ${${${pass::=$(read -Ers "?Passphrase: ")}:#$(\
     read -Ers "?$(print "\nConfirmation: ")")}:+false};
 do print "\nDidn't match--try again:\n"; done; print
-sgdisk --largest-new=0 --change-name=0:cryptsys /dev/sda
+sgdisk --new=0:0:0 /dev/sda
 print -r $pass | cryptsetup luksFormat /dev/sda7
 print -r $pass | cryptsetup open /dev/sda7 lvm
 pvcreate /dev/mapper/lvm # physical volume
