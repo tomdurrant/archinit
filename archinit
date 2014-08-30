@@ -29,7 +29,7 @@ crypt_part_label    cryptpart
 crypt_mapped_label  cryptdev
 crypt_fs_label      archlinux
 modules     "i915"
-hooks       "base systemd sd-encrypt sd-vconsole modconf block filesystems keyboard fsck shutdown"
+hooks       "base systemd sd-encrypt sd-lvm2 sd-vconsole modconf block filesystems keyboard fsck shutdown"
 )
 #hooks       "base systemd sd-encrypt sd-vconsole modconf block filesystem btrfs fsck shutdown"
 #boot_part   2
@@ -135,20 +135,12 @@ video           'print "export LIBVA_DRIVER_NAME=vdpau\nexport VDPAU_DRIVER=va_g
 # purely cosmetic
 setfont $CONFIG[font]
 
+TRAPZERR () { print "\nUNHANDLED ERROR"; exit }
+
 :<< \
 ------------------------------------------------------------------------
 Storage configuration
 ------------------------------------------------------------------------
-cleanup () {
-umount -R /mnt/home/dmz &>/dev/null || :
-umount -R /mnt/home &>/dev/null || :
-umount -R /mnt/boot &>/dev/null || :
-umount -R /mnt &>/dev/null || :
-cryptsetup close $CONFIG[crypt_mapped_label] &>/dev/null || :
-swapoff -L $CONFIG[swap_label] &>/dev/null || : ; }
-cleanup
-TRAPZERR () { print "\nUNHANDLED ERROR"; exit }
-[[ -n $1 ]] && exit # quick cleanup from cli... archinit cleanup
 
 # partitioning (drive contents preserved)
 # ----------------------------------------------------------------------
@@ -156,34 +148,29 @@ ram="$(( $(print ${$(cat /proc/meminfo | grep -i memtotal)[2]}) / 1000000 ))G"
 while ! ${${${pass::=$(read -Ers "?Passphrase: ")}:#$(\
     read -Ers "?$(print "\nConfirmation: ")")}:+false};
 do print "\nDidn't match--try again:\n"; done; print
-sgdisk --new=0:0:0 /dev/sda
-print -r $pass | cryptsetup luksFormat /dev/sda6
-print -r $pass | cryptsetup open /dev/sda6 lvm
+sgdisk --new=0:0:0 --change-name=0:cryptlvm /dev/sda
+print -r $pass | cryptsetup luksFormat /dev/disk/by-partlabel/cryptlvm
+print -r $pass | cryptsetup open /dev/disk/by-partlabel/cryptlvm lvm
 pvcreate /dev/mapper/lvm # physical volume
 vgcreate storage /dev/mapper/lvm # volume group
 lvcreate -L 8G storage  -n swap # logical volume
 lvcreate -l 100%FREE storage -n system # logical volume
 mkfs.btrfs --label system /dev/mapper/storage-system # make filesystem
 mkswap -L swap /dev/mapper/storage-swap # make swap device
-swapon -L swap -d # activate swap device
+swapon -d -L swap # activate swap device
 # OR swapon -d /dev/storage/swapvol # activate swap device
 mount -t btrfs /dev/storage/system /mnt # temp mount for subvol creation
 btrfs subvolume create /mnt/root
-btrfs subvolume set-default ${$(btrfs subvolume list /mnt/root)[(w)2]} /mnt/root
+btrfs subvolume set-default ${$(btrfs subvolume list /mnt/root)[(w)2]} /mnt
 btrfs subvolume create /mnt/home
 umount -R /mnt
-o_btrfs=defaults,x-mount.mkdir,compress=lzo,space_cache,autodefrag,inode_cache
-o_fat=defaults,x-mount.mkdir
-o_ntfs=defaults,x-mount.mkdir
+o=defaults,x-mount.mkdir
+o=defaults,x-mount.mkdir
+o_btrfs=$o,compress=lzo,space_cache,autodefrag,inode_cache,ssd,discard
 mount -t btrfs -o subvol=root,$o_btrfs /dev/storage/system /mnt
 mount -t btrfs -o subvol=home,$o_btrfs /dev/storage/system /mnt/home
 mount -o $o_fat -L SYSTEM /mnt/boot
 mount -o $o_ntfs -L DMZ /mnt/home/dmz
-
-CONFIG[crypt_uuid]="$(lsblk -no UUID /dev/sda6)"
-CONFIG[lvm_uuid]="$(lsblk -no UUID /dev/mapper/lvm)"
-CONFIG[swap_uuid]="$(lsblk -no UUID /dev/sda$CONFIG[swap_part])" # get swap uuid if no label
-
 
 # Mount filesystems and subvolumes
 # ----------------------------------------------------------------------
@@ -199,10 +186,12 @@ rm -f /mnt/boot/{initramfs-linux-fallback.img,initramfs-linux.img,vmlinuz-linux}
 ------------------------------------------------------------------------
 Install base system
 ------------------------------------------------------------------------
+pacman -Sy
 pacstrap /mnt base
 pacstrap /mnt base-devel
 pacstrap /mnt zsh
-genfstab -U -p /mnt >> /mnt/etc/fstab
+genfstab -L -p /mnt > /mnt/etc/fstab
+genfstab -U -p /mnt > /mnt/etc/fstab.uuid
 
 :<< \
 ------------------------------------------------------------------------
@@ -250,14 +239,19 @@ installpkg () {
 ------------------------------------------------------------------------
 Locale, Console Font, Timezone, Hostname
 ------------------------------------------------------------------------
+print "Setting locale-gen: ${CONFIG[locale]}"
 print ${CONFIG[locale]} > /etc/locale.gen && locale-gen
+print "Setting locale.conf: ${CONFIG[locale][(w)1]}"
 print ${CONFIG[locale][(w)1]} >> /etc/locale.conf
 export LANG=${CONFIG[locale][(w)1]}
+print "KEYMAP=${CONFIG[keymap]}\nFONT=${CONFIG[font]}"
 print "KEYMAP=${CONFIG[keymap]}\nFONT=${CONFIG[font]}" > /etc/vconsole.conf
 ln -sf "/usr/share/zoneinfo/${CONFIG[timezone]}" /etc/localtime && hwclock --systohc --utc
+print "Hostname: ${CONFIG[hostname]}"
 print ${CONFIG[hostname]} > /etc/hostname
 insert_at=${"${(@A)hosts::="${(@f):-$(</etc/hosts)}"}"[(I)127*]}
 hosts[$insert_at]="${hosts[insert_at]} ${CONFIG[hostname]}"
+print -l -- "${(@)hosts}"
 print -l -- "${(@)hosts}" > /etc/hosts
 
 :<< \
