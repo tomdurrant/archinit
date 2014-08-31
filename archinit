@@ -161,6 +161,7 @@ dispmgr         'lightdm.service'
 wm              'ln -s .xinitrc .xsession'
 boot            'refind setup...
                  systemctl disable lightdm; systemctl enable lightdm-plymouth'
+modules         'print hid-multitouch > /etc/modules-load.d/hid-multitouch.conf'
 )
 
 # purely cosmetic
