@@ -123,6 +123,9 @@ INSTALL=(
                  xorg-xfontsel
                  zip
                 "
+9,themes        "
+                 gnome-themes-standard # (inc gtk3 themes)
+                "
 
 9,xapps         "
                  ttf-bitstream-vera
