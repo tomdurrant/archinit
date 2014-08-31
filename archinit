@@ -53,13 +53,14 @@ INSTALL=(
                  iw
                  wpa_supplicant
                  rfkill
-                 networkmanager
-                 networkmanager-openvpn
-                 networkmanager-dmenu-git 
-                 
-                 # trying following network manager applet combo:
-                 networkmanager-ifupdown
-                 network-manager-applet-gtk2
+                 #networkmanager
+                 #networkmanager-openvpn
+                 #networkmanager-dmenu-git
+                 #
+                 # trying netctl... networkmanager seems to drop connection on the surface pro 3 a lot
+                 netctl
+                 ifplugd
+                 wpa_supplicant
                 "
 
 4,x             "
