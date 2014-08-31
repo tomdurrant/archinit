@@ -45,7 +45,6 @@ INSTALL=(
                  openssh
                  powertop
                  python
-                 refind-efi
                  vim
                 "
 
@@ -56,10 +55,7 @@ INSTALL=(
                  rfkill
                  networkmanager
                  networkmanager-openvpn
-                "
-
-3,boot          "
-                 plymouth
+                 networkmanager-dmenu-git 
                 "
 
 4,x             "
@@ -68,6 +64,7 @@ INSTALL=(
                  xf86-input-wacom
                  libva-intel-driver
                  libvdpau-va-gl
+                 xorg-xinit
                 "
 
 5,dispmgr       "
@@ -75,7 +72,15 @@ INSTALL=(
                  accountsservice
                  light-locker
                  lightdm-gtk3-greeter
+                 xorg-server-xephyr
                 "
+
+3,boot          "
+                 refind-efi
+                 plymouth
+                 ttf-dejavu
+                "
+
 
 6,freedesktop   "
                  d-feet
@@ -97,9 +102,15 @@ INSTALL=(
                  udiskie
                  unclutter
                  volnoti
+                 what other notification daemon?
+                 dex-git
+                 # dex is a good replacement for gtk-launch
+                 desktop-file-utils #may not be necessary
+                 xdg-utils #includes xdg-open... see xdg-open on arch wiki for replacement options
                 "
 
 8,xutils        "
+                 arandr
                  argyllcms
                  dispcalgui
                  feh
@@ -116,6 +127,7 @@ INSTALL=(
 9,xapps         "
                  ttf-bitstream-vera
                  google-chrome-dev
+                 ttf-google-fonts-git
                 "
 
 10,sound        "
@@ -124,12 +136,21 @@ INSTALL=(
                  pulseaudio-alsa
                  paprefs
                  pavucontrol
+                 pa-applet-git
+                 OR
+                 pasystray
                 "
 )
 
 INIT=(
 sound           'amixer sset Master unmute || :'
 video           'print "export LIBVA_DRIVER_NAME=vdpau\nexport VDPAU_DRIVER=va_gl" > /etc/video_accel.sh'        
+network         'systemctl enable NetworkManager; systemctl enable NetworkManager-dispatcher'
+                'copy /usr/share/doc/networkmanager-dmenu-git/config.ini.example into ~/.config/networkmanager-dmenu/config.ini'
+dispmgr         'lightdm.service'
+wm              'ln -s .xinitrc .xsession'
+boot            'refind setup...
+                 systemctl disable lightdm; systemctl enable lightdm-plymouth'
 )
 
 # purely cosmetic
@@ -161,7 +182,7 @@ swapon -d -L swap # activate swap device
 # OR swapon -d /dev/storage/swapvol # activate swap device
 mount -t btrfs /dev/storage/system /mnt # temp mount for subvol creation
 btrfs subvolume create /mnt/root
-btrfs subvolume set-default ${$(btrfs subvolume list /mnt/root)[(w)2]} /mnt
+btrfs subvolume set-default ${$(btrfs subvolume list /mnt)[(w)2]} /mnt
 btrfs subvolume create /mnt/home
 umount -R /mnt
 o=defaults,x-mount.mkdir
@@ -169,8 +190,8 @@ o=defaults,x-mount.mkdir
 o_btrfs=$o,compress=lzo,space_cache,autodefrag,inode_cache,ssd,discard
 mount -t btrfs -o subvol=root,$o_btrfs /dev/storage/system /mnt
 mount -t btrfs -o subvol=home,$o_btrfs /dev/storage/system /mnt/home
-mount -o $o_fat -L SYSTEM /mnt/boot
-mount -o $o_ntfs -L DMZ /mnt/home/dmz
+mount -o $o -L SYSTEM /mnt/boot
+mount -o $o -L DMZ /mnt/home/dmz
 
 # Mount filesystems and subvolumes
 # ----------------------------------------------------------------------
@@ -258,7 +279,7 @@ print -l -- "${(@)hosts}" > /etc/hosts
 ------------------------------------------------------------------------
 Initial User & sudo
 ------------------------------------------------------------------------
-useradd -m -G wheel -s =zsh $CONFIG[username]
+useradd -m -G wheel -s /usr/bin/zsh $CONFIG[username]
 echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /var/tmp/sudoers.wheel
 visudo -cf /var/tmp/sudoers.wheel \
     && { mv /var/tmp/sudoers.wheel /etc/sudoers.d/wheel } \
