@@ -96,6 +96,8 @@ INSTALL=(
                  compton
                  dmenu
                  dunst
+                 gnome-settings-daemon # may be more trouble than it's worth... right now ONLY installed to quick test if
+                 # it's enough to get wacom working properly.
                  gnome-keyring
                  gnome-keyring-query
                  i3
