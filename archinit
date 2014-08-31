@@ -56,6 +56,10 @@ INSTALL=(
                  networkmanager
                  networkmanager-openvpn
                  networkmanager-dmenu-git 
+                 
+                 # trying following network manager applet combo:
+                 networkmanager-ifupdown
+                 network-manager-applet-gtk2
                 "
 
 4,x             "
