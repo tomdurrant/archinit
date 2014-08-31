@@ -138,6 +138,12 @@ INSTALL=(
                  ttf-bitstream-vera
                  google-chrome-dev
                  ttf-google-fonts-git
+                 
+                 # firefox for hidpi support
+                 firefox
+                 # gstreamer stuff for firefox
+                 gst-plugins-good
+                 gst-libav
                 "
 
 10,sound        "
