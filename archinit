@@ -144,6 +144,7 @@ INSTALL=(
                  # gstreamer stuff for firefox
                  gst-plugins-good
                  gst-libav
+                 # https://addons.mozilla.org/en-US/firefox/addon/autohidpi/ for hidpi support
                 "
 
 10,sound        "
