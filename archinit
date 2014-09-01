@@ -125,6 +125,7 @@ INSTALL=(
                  add the infinality-bundle repo to pacman.conf
                  add key to keyring (key ID 962DDE58)
                  install infinality-bundle meta package
+                 from aur: pacman -Ss infinality-bundle-fonts-extra
                 "
 
 8,xutils        "
