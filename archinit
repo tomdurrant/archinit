@@ -53,6 +53,8 @@ INSTALL=(
                  iw
                  wpa_supplicant
                  rfkill
+                 #
+                 # no more network manager... too unstable
                  #networkmanager
                  #networkmanager-openvpn
                  #networkmanager-dmenu-git
@@ -102,6 +104,7 @@ INSTALL=(
                  gnome-keyring
                  gnome-keyring-query
                  i3
+                 ttf-font-icons
                  network-manager-applet
                  polkit-gnome
                  rxvt-unicode
