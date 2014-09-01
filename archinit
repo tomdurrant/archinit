@@ -126,6 +126,8 @@ INSTALL=(
                  add key to keyring (key ID 962DDE58)
                  install infinality-bundle meta package
                  from aur: pacman -Ss infinality-bundle-fonts-extra
+                 going to try this: https://wiki.archlinux.org/index.php/Ttf-ms-win8
+                 and then switching fc-presets set to ms
                 "
 
 8,xutils        "
