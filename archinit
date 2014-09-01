@@ -118,6 +118,14 @@ INSTALL=(
                  desktop-file-utils #may not be necessary
                  xdg-utils #includes xdg-open... see xdg-open on arch wiki for replacement options
                 "
+7,fonts         "
+                 # using Infinality-bundle+fonts - cf arch wiki & bbs:
+                 # https://wiki.archlinux.org/index.php/Infinality-bundle%2Bfonts#Installation
+                 # https://bbs.archlinux.org/viewtopic.php?id=162098
+                 add the infinality-bundle repo to pacman.conf
+                 add key to keyring (key ID 962DDE58)
+                 install infinality-bundle meta package
+                "
 
 8,xutils        "
                  arandr
