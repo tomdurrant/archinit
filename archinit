@@ -171,6 +171,7 @@ INSTALL=(
                  OR
                  pasystray
                 "
+11,power        "tlp smartmontools lsb-release ethtool"
 )
 
 INIT=(
@@ -183,6 +184,7 @@ wm              'ln -s .xinitrc .xsession'
 boot            'refind setup...
                  systemctl disable lightdm; systemctl enable lightdm-plymouth'
 modules         'print hid-multitouch > /etc/modules-load.d/hid-multitouch.conf'
+power           'systemctl enable tlp; systemctl enable tlp-sleep;'
 )
 
 # purely cosmetic
