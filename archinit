@@ -58,10 +58,10 @@ mount -o $o_btrfs -L System /mnt
 mount -o $o -L EFI /mnt/boot
 
 # Install base system
-pacstrap /mnt base base-devel btrfs-progs zsh
+pacstrap /mnt base base-devel btrfs-progs zsh vim terminus
 
 # Generate fstab (though I want to experiment with systemd auto detection based on filesystem type)
-genfstab -L -p /mnt >> /mnt/etc/fstab
+genfstab -L -p /mnt >> /mnt/etc/fstab_off
 
 
 arch-chroot /mnt /usr/bin/zsh
@@ -69,6 +69,20 @@ arch-chroot /mnt /usr/bin/zsh
 # ---------------------------------------------------
 # chroot commands
 # ---------------------------------------------------
+
+setfont ter-u24n
+print "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+locale-gen
+print "LANG=en_US.UTF-8" > /etc/locale.conf
+export LANG=en_US.UTF-8
+ln -s /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
+hwclock --systohc --utc
+echo myhostname > /etc/hostname
+#edit /etc/hosts the same way... see beginners guide
+
+cat > /etc/vconsole.conf << EOF
+FONT=ter-u24n
+EOF
 
 pacman -S gummiboot
 gummiboot --path=/boot install
@@ -86,10 +100,10 @@ EOF
 
 mv /etc/mkinitcpio.conf /etc/mkinitcpio.orig
 cat > /etc/mkinitcpio.conf << EOF
-MODULES=""
+MODULES="i915"
 BINARIES=""
 FILES=""
-HOOKS="systemd autodetect modconf block filesystems keyboard fsck"
+HOOKS="systemd sd-vconsole autodetect modconf block filesystems keyboard fsck"
 EOF
 
 mkinitcpio -p linux
@@ -97,8 +111,6 @@ mkinitcpio -p linux
 # ---------------------------------------------------
 # after reboot
 # ---------------------------------------------------
-print "en_US.UTF-8 UTF-8" >> /etc/locale.gen
-locale-gen
 localectl set-locale LANG=en_US.UTF-8
 hostnamectl set-hostname HOSTNAME
 # set hw clock to UTC and then set timezone
@@ -106,7 +118,11 @@ timedatectl set-local-rtc 0
 timedatectl set-timezone America/Los_Angeles
 timedatectl set-ntp true
 
-pacman -S xf86-video-intel libva-intel-driver mesa gnome gnome-extra gnome-initial-setup networkmanager network-manager-applet xf86-input-synaptics iw gnome-mplayer terminator
+pacman -S xorg xorg-server xf86-video-intel libva libva-intel-driver mesa mesa-libgl
+pacman -S gnome gnome-extra gnome-mplayer terminator
+pacman -S networkmanager network-manager-applet
+pacman -S openssh
+
 systemctl enable gdm
 systemctl enable NetworkManager
 
@@ -122,3 +138,9 @@ EOF
 # queue up initial aur packages
 curl -LO https://aur.archlinux.org/packages/au/aura-bin/aura-bin.tar.gz
 curl -LO https://aur.archlinux.org/packages/go/google-chrome-dev/google-chrome-dev.tar.gz
+
+# also install from AUR:
+gnome-defaults-list
+
+# i3
+i3-wm i3status i3lock
