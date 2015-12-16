@@ -21,7 +21,7 @@ timezone    Australia/Melbourne
 locale      "en_US.UTF-8 UTF-8"
 keymap      us
 font        Lat2-Terminus16
-drive       /dev/nvme0n1p
+drive       /dev/nvme0n1
 )
 
 # purely cosmetic
@@ -45,9 +45,9 @@ sgdisk --new=3:0:0 -c 3:"Linux System Partition" -t 3:8304 $CONFIG[drive]
 # Format EFI system partition
 # Format swap partition
 # Format system partition
-mkfs.fat -F32 -n EFI $CONFIG[drive]1
-mkswap -L Swap $CONFIG[drive]2
-mkfs.btrfs --force --label System $CONFIG[drive]3
+mkfs.fat -F32 -n EFI $CONFIG[drive]p1
+mkswap -L Swap $CONFIG[drive]p2
+mkfs.btrfs --force --label System $CONFIG[drive]p3
 
 # Activate swap
 # Mount filesystem
@@ -58,7 +58,7 @@ mount -o $o_btrfs -L System /mnt
 mount -o $o -L EFI /mnt/boot
 
 # Install base system
-pacstrap /mnt base base-devel btrfs-progs zsh vim terminus
+pacstrap /mnt base base-devel btrfs-progs zsh vim 
 
 # Generate fstab (though I want to experiment with systemd auto detection based on filesystem type)
 genfstab -L -p /mnt >> /mnt/etc/fstab_off
