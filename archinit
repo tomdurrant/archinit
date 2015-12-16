@@ -7,21 +7,21 @@ setopt ERR_EXIT EXTENDED_GLOB
 # Will be using SATA hw based encryption, so no LUKS
 # Going for a pure btrfs UEFI install, single partition
 # ----------------------------------------------------------------------
-# curl -LO http://links.ethanschoonover.com/archinit
+# curl -LO https://raw.githubusercontent.com/tomdurrant/archinit/master/archinit
 
 
 typeset -A CONFIG INSTALL INIT MKINITCPIO
 typeset -a INSTALLERS
 
 CONFIG=(
-username    es
+username    tdurrant
 shell       zsh
-hostname    naptime
-timezone    America/Los_Angeles
+hostname    rocket
+timezone    Australia/Melbourne
 locale      "en_US.UTF-8 UTF-8"
 keymap      us
 font        Lat2-Terminus16
-drive       /dev/sda
+drive       /dev/nvme0n1p
 )
 
 # purely cosmetic
@@ -75,9 +75,9 @@ print "en_US.UTF-8 UTF-8" >> /etc/locale.gen
 locale-gen
 print "LANG=en_US.UTF-8" > /etc/locale.conf
 export LANG=en_US.UTF-8
-ln -s /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
+ln -s /usr/share/zoneinfo/$CONFIG[timezone] /etc/localtime
 hwclock --systohc --utc
-echo myhostname > /etc/hostname
+echo $CONFIG[hostname] > /etc/hostname
 #edit /etc/hosts the same way... see beginners guide
 
 cat > /etc/vconsole.conf << EOF
@@ -115,7 +115,7 @@ localectl set-locale LANG=en_US.UTF-8
 hostnamectl set-hostname HOSTNAME
 # set hw clock to UTC and then set timezone
 timedatectl set-local-rtc 0
-timedatectl set-timezone America/Los_Angeles
+timedatectl set-timezone $CONFIG[timezone]
 timedatectl set-ntp true
 
 pacman -S xorg xorg-server xf86-video-intel libva libva-intel-driver mesa mesa-libgl
@@ -143,4 +143,4 @@ curl -LO https://aur.archlinux.org/packages/go/google-chrome-dev/google-chrome-d
 gnome-defaults-list
 
 # i3
-i3-wm i3status i3lock
+# i3-wm i3status i3lock
