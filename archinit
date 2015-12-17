@@ -20,12 +20,10 @@ hostname    rocket
 timezone    Australia/Melbourne
 locale      "en_US.UTF-8 UTF-8"
 keymap      us
-font        Lat2-Terminus16
 drive       /dev/nvme0n1
+lang=au_US.UTF-8
 )
 
-# purely cosmetic
-setfont $CONFIG[font]
 
 TRAPZERR () { print "\nUNHANDLED ERROR"; exit }
 
@@ -70,22 +68,16 @@ arch-chroot /mnt /usr/bin/zsh
 # chroot commands
 # ---------------------------------------------------
 
-setfont ter-u24n
 print "en_US.UTF-8 UTF-8" >> /etc/locale.gen
 locale-gen
-print "LANG=en_US.UTF-8" > /etc/locale.conf
-export LANG=en_US.UTF-8
+print $CONFIG[lang] > /etc/locale.conf
+export LANG=$CONFIG[lang]
 ln -s /usr/share/zoneinfo/$CONFIG[timezone] /etc/localtime
 hwclock --systohc --utc
 echo $CONFIG[hostname] > /etc/hostname
 #edit /etc/hosts the same way... see beginners guide
 
-cat > /etc/vconsole.conf << EOF
-FONT=ter-u24n
-EOF
-
-pacman -S gummiboot
-gummiboot --path=/boot install
+bootctl --path=/boot install
 # create /boot/loader/loader.conf
 cat > /boot/loader/loader.conf << EOF
 timeout 3
@@ -103,7 +95,7 @@ cat > /etc/mkinitcpio.conf << EOF
 MODULES="i915"
 BINARIES=""
 FILES=""
-HOOKS="systemd sd-vconsole autodetect modconf block filesystems keyboard fsck"
+HOOKS="systemd autodetect modconf block filesystems keyboard fsck"
 EOF
 
 mkinitcpio -p linux
@@ -111,8 +103,8 @@ mkinitcpio -p linux
 # ---------------------------------------------------
 # after reboot
 # ---------------------------------------------------
-localectl set-locale LANG=en_US.UTF-8
-hostnamectl set-hostname HOSTNAME
+localectl set-locale LANG=$CONFIG[lang]
+hostnamectl set-hostname $CONFIG[hostname]
 # set hw clock to UTC and then set timezone
 timedatectl set-local-rtc 0
 timedatectl set-timezone $CONFIG[timezone]
@@ -135,12 +127,4 @@ Section "Device"
 EndSection
 EOF
 
-# queue up initial aur packages
-curl -LO https://aur.archlinux.org/packages/au/aura-bin/aura-bin.tar.gz
-curl -LO https://aur.archlinux.org/packages/go/google-chrome-dev/google-chrome-dev.tar.gz
 
-# also install from AUR:
-gnome-defaults-list
-
-# i3
-# i3-wm i3status i3lock
